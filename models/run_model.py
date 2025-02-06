@@ -75,6 +75,7 @@ class RunModel(QObject):
                 QCoreApplication.processEvents()
 
             self.finished_signal.emit()
+
         except Exception as e:
             self.error_signal.emit(f"An error occurred: {str(e)}")
 
@@ -157,6 +158,10 @@ class RunModel(QObject):
                                 f"Error activating layout after 3 attempts: {str(e)}\n{traceback.format_exc()}"
                             )
                             continue  # Skip this layout after retries
+
+                # Rename layout if enabled in settings and it is numeric
+                if self.settings.get("rename_sheets", False):
+                    AutoCADModel.rename_layouts(acad, doc)
 
                 # Retry logic for extracting attributes
                 try:
@@ -256,6 +261,19 @@ class RunModel(QObject):
                     self.left_menu.add_skipped_file(f"{filename} - {layout.Name}",
                                           f"Error adding static assignments: {str(e)}\n{traceback.format_exc()}")
                     continue  # Skip this layout
+
+                if self.settings.get("read_replace_enabled", False):
+                    try:
+                        read_for = self.settings.get("read_replace_data", {})
+                        updated_data_with_static = read_replace_assignments(
+                            layout_data, updated_data_with_static, read_for, layout.Name
+                        )
+                    except Exception as e:
+                        self.left_menu.add_skipped_file(
+                            f"{filename} - {layout.Name}",
+                            f"Error adding read-replace assignments: {str(e)}\n{traceback.format_exc()}",
+                        )
+                        continue
 
                 try:
                     # Write updates to AutoCAD
@@ -364,3 +382,24 @@ def add_static_assignments(table_data, updated_data=None, layout_name=None):
         })
 
     return updated_data  # Return the updated data, including all static assignments
+
+
+def read_replace_assignments(table_data, updated_data=None, read_for=None, layout_name=None):
+    if updated_data is None:
+        updated_data = []
+    if read_for is None:
+        read_for = {}
+    updated_data_dict = {item['Tag']: item for item in updated_data}
+    for item in table_data:
+        tag = item.get('Tag')
+        value = item.get('Value')
+        if value in read_for:
+            new_value = read_for[value]
+            item['Value'] = new_value
+            if tag in updated_data_dict:
+                updated_data_dict[tag]['Value'] = new_value
+            else:  # inserted
+                updated_data_dict[tag] = {'Tag': tag, 'Assignment': item.get('Assignment', ''), 'Value': new_value, 'StaticValue': item.get('StaticValue', ''), 'Layout': layout_name}
+    updated_data = list(updated_data_dict.values())
+    return updated_data
+

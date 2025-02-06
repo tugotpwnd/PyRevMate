@@ -25,8 +25,8 @@ class SummaryView(QDialog):
         layout = QVBoxLayout()
 
         # Table for displaying summary data
-        self.table = QTableWidget(len(summary_data), 3)
-        self.table.setHorizontalHeaderLabels(["Revision", "Drawing Number", "Drawing Title"])
+        self.table = QTableWidget(len(summary_data), 4)
+        self.table.setHorizontalHeaderLabels(["Revision", "Revision Description", "Drawing Number", "Drawing Title"])
         self.populate_table()
         layout.addWidget(self.table)
 
@@ -45,8 +45,9 @@ class SummaryView(QDialog):
         """Populate the table with summary data."""
         for row, summary in enumerate(self.summary_data):
             self.table.setItem(row, 0, QTableWidgetItem(summary["Revision"]))
-            self.table.setItem(row, 1, QTableWidgetItem(summary["Drawing Number"]))
-            self.table.setItem(row, 2, QTableWidgetItem(summary["Drawing Title"]))
+            self.table.setItem(row, 1, QTableWidgetItem(summary["Revision Description"]))
+            self.table.setItem(row, 2, QTableWidgetItem(summary["Drawing Number"]))
+            self.table.setItem(row, 3, QTableWidgetItem(summary["Drawing Title"]))
 
     def export_to_excel(self):
         """Export the summary data to an Excel file."""

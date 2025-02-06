@@ -1,3 +1,5 @@
+from models.increment_revision_model import find_latest_revision_value_and_index
+
 class DrawingSummaryManager:
     def __init__(self):
         """Initialize the DrawingSummaryManager with an empty list to store layout summaries."""
@@ -37,9 +39,15 @@ class DrawingSummaryManager:
         ]
         concatenated_title = " - ".join(filter(None, drawing_titles))
 
+        rev, index = find_latest_revision_value_and_index(layout_data)
+        revision_desc = next(
+            (field["Value"] for field in updated_layout_data if field.get("Assignment") == f"REV {index} DESC"), None
+        )
+
         # Add to the summaries list
         self.layout_summaries.append({
             "Revision": revision or "N/A",
+            "Revision Description": revision_desc or "N/A",
             "Drawing Number": drawing_number or "N/A",
             "Drawing Title": concatenated_title or "N/A"
         })

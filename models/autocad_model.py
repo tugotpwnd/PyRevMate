@@ -274,3 +274,27 @@ class AutoCADModel:
         except Exception as e:
             raise RuntimeError(f"Error executing Zoom Extents: {str(e)}")
 
+
+    @staticmethod
+    def rename_layouts(acad, doc):
+        """
+        Trigger a Zoom Extents command in AutoCAD.
+
+        Parameters:
+        - acad: The AutoCAD instance.
+        - doc: The open AutoCAD document.
+
+        Raises:
+        - RuntimeError if the command fails.
+        """
+        try:
+            if not doc:
+                raise ValueError("No document is active to execute layout rename.")
+
+            # Switch focus to the document
+            acad.ActiveDocument = doc
+
+            # Send the Zoom Extents command to AutoCAD
+            doc.SendCommand("RENAMELAYOUTS\n")
+        except Exception as e:
+            raise RuntimeError(f"Error executing Layout Rename: {str(e)}")

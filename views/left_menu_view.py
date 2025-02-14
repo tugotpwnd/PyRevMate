@@ -59,11 +59,20 @@ class LeftMenuView(QGroupBox):
         self.increment_revision_checkbox = QCheckBox("Increment Revision")
         self.zoom_extents_checkbox = QCheckBox("Zoom Extents")
         self.read_replace_checkbox = QCheckBox("Enable Read and Replace")
-        self.rename_sheets_checkbox = QCheckBox("Rename Sheets (Remove Leading Zeroes)")
+        self.rename_sheets_checkbox = QCheckBox("Rename Sheets (Remove Leading Zeroes) WIP")
+        self.rename_sheets_checkbox.setEnabled(False)
+        self.plot_to_pdf_checkbox = QCheckBox("Plot to PDF")        # Create text field (initially disabled)
+        self.plot_style_text_box = QLineEdit()
+        self.plot_style_text_box.setPlaceholderText("Enter plot style...")
+        self.plot_style_text_box.setEnabled(False)
+
 
         for checkbox in [self.purge_checkbox, self.transmit_checkbox, self.increment_revision_checkbox,
-                         self.zoom_extents_checkbox, self.read_replace_checkbox, self.rename_sheets_checkbox]:
+                         self.zoom_extents_checkbox, self.read_replace_checkbox, self.rename_sheets_checkbox,
+                         self.plot_to_pdf_checkbox]:
             layout.addWidget(checkbox)
+
+        layout.addWidget(self.plot_style_text_box)
 
         self.read_replace_btn = QPushButton("Configure Read/Replace Pairs")
         self.read_replace_btn.clicked.connect(self.configure_read_replace)
@@ -132,6 +141,8 @@ class LeftMenuView(QGroupBox):
         self.increment_revision_checkbox.stateChanged.connect(self.toggle_increment_revision)
         self.dropdown.currentTextChanged.connect(self.toggle_hardset_input)
 
+        self.plot_to_pdf_checkbox.stateChanged.connect(self.toggle_plot_style)
+
         self.setLayout(layout)
 
         sys.stdout = StreamRedirect(self.log_window)
@@ -158,6 +169,10 @@ class LeftMenuView(QGroupBox):
         for line_edit in self.text_inputs.values():
             line_edit.setEnabled(enabled)
 
+    def toggle_plot_style(self, state):
+        enabled = state == Qt.Checked
+        self.plot_style_text_box.setEnabled(enabled)
+
     def toggle_hardset_input(self, text):
         self.hardset_input.setEnabled(text == "Hardset Revision" and self.increment_revision_checkbox.isChecked())
 
@@ -178,7 +193,9 @@ class LeftMenuView(QGroupBox):
             "attributes": {label: field.text() for label, field in self.text_inputs.items()},
             "read_replace_enabled": self.read_replace_checkbox.isChecked(),
             "read_replace_data": self.read_replace_data,
-            "rename_sheets": self.rename_sheets_checkbox.isChecked()
+            "rename_sheets": self.rename_sheets_checkbox.isChecked(),
+            "plot_to_pdf": self.plot_to_pdf_checkbox.isChecked(),
+            "plot_style_table": self.plot_style_text_box.text()
         }
 
     def add_skipped_file(self, filename, error):

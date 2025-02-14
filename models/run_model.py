@@ -15,7 +15,7 @@ class RunModel(QObject):
     finished_signal = pyqtSignal()  # Signal when the operation is complete
     process_aborted_signal = pyqtSignal()
 
-    def __init__(self, settings, folder_path, table_data, left_menu):
+    def __init__(self, settings, folder_path, table_data, left_menu, file_path):
         """
         Initialize the RunModel.
 
@@ -30,6 +30,7 @@ class RunModel(QObject):
         self.folder_path = folder_path
         self.table_data = table_data
         self.left_menu = left_menu
+        self.file_path = file_path
         self.stop_requested = False
         self.field_validator = CrucialFieldValidator(table_data)
 
@@ -167,7 +168,7 @@ class RunModel(QObject):
                 try:
                     for attempt in range(3):  # Retry up to 3 times
                         try:
-                            layout_data = AutoCADModel.extract_attributes_with_retry(
+                            layout_data, _ = AutoCADModel.extract_attributes_with_retry(
                                 acad=acad, doc=doc, layout_name=layout_name
                             )
                             break  # Exit retry loop if successful
@@ -293,6 +294,31 @@ class RunModel(QObject):
                 except Exception as e:
                     self.left_menu.add_skipped_file(f"{filename} - {layout.Name}",
                                           f"Error executing additional commands: {str(e)}\n{traceback.format_exc()}")
+                    continue  # Skip this layout
+
+                dwg_value = None
+                revision_value = None
+                try:
+                    if self.settings.get("plot_to_pdf", True):
+
+                        for item in new_data:
+                            if item["Assignment"] == "DWG No.":
+                                dwg_value = item["Value"]
+                            elif item["Assignment"] == "REVISION":
+                                revision_value = item["Value"]
+
+                        if dwg_value and revision_value:
+                            pdf_name = f"{dwg_value}_{revision_value}"
+
+                            plot_style = self.settings.get("plot_style_table")
+
+                            AutoCADModel.plot_to_pdf(plot_style, pdf_name, self.file_path, doc, acad)
+                        else:
+                            print("Missing DWG or ISSUE value, skipping plot to PDF.")
+
+                except Exception as e:
+                    self.left_menu.add_skipped_file(f"{filename} - {layout.Name}",
+                                                    f"Error executing additional commands: {str(e)}\n{traceback.format_exc()}")
                     continue  # Skip this layout
 
                 # Append the drawing to the summary

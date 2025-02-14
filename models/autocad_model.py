@@ -2,7 +2,7 @@ import os
 import win32com.client
 import json5
 import time
-
+import comtypes.client
 
 class AutoCADModel:
     @staticmethod
@@ -118,6 +118,9 @@ class AutoCADModel:
                                 },
                             })
 
+                layout = doc.ActiveLayout
+                plot_style_table = layout.StyleSheet
+
                 # Save and close the document if filename is provided
                 if filename:
                     try:
@@ -126,7 +129,7 @@ class AutoCADModel:
                     except Exception as save_close_error:
                         print(f"Error saving/closing file {filename}: {str(save_close_error)}")
 
-                return data
+                return data, plot_style_table
 
             except Exception as e:
                 # Retry logic
@@ -298,3 +301,56 @@ class AutoCADModel:
             doc.SendCommand("RENAMELAYOUTS\n")
         except Exception as e:
             raise RuntimeError(f"Error executing Layout Rename: {str(e)}")
+
+    @staticmethod
+    def plot_to_pdf(plot_style: str, doc_name: str, file_path, doc, acad):
+        """
+        Triggers a plot command in AutoCAD.
+
+        Parameters:
+        - plot_style (str): The CTB plot style file.
+        - doc_name (str): The document name for the plot.
+        - doc: The open AutoCAD document.
+        - acad: The AutoCAD instance.
+
+        Raises:
+        - RuntimeError if the command fails.
+        """
+        try:
+            if not doc:
+                raise ValueError("No document is active to execute plot.")
+
+            # Switch focus to the document
+            acad.ActiveDocument = doc
+
+            root_folder = os.path.dirname(file_path)
+            new_path = os.path.join(root_folder, doc_name)
+            print(f"New path = {new_path}")
+
+            # Properly format the command with arguments
+            command = f'PLOTCURRENTLAYOUT\n {new_path}\n "{plot_style}"\n'
+
+            # Send the plot command to AutoCAD
+            doc.SendCommand(command)
+
+        except Exception as e:
+            raise RuntimeError(f"Error plotting: {str(e)}")
+
+    @staticmethod
+    def get_plot_style_table():
+        try:
+            acad = comtypes.client.GetActiveObject("AutoCAD.Application")
+            doc = acad.ActiveDocument
+
+            # Retrieve the plot settings for the active layout
+            layout = doc.ActiveLayout
+            plot_style_table = layout.StyleSheet  # This gets the currently assigned CTB file
+
+            if plot_style_table:
+                return plot_style_table
+            else:
+                print("No CTB (Plot Style) file detected.")
+
+        except Exception as e:
+            print(f"Error: {e}")
+

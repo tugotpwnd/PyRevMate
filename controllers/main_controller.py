@@ -1,23 +1,24 @@
 from views.main_view import MainView
 from controllers.extract_controller import ExtractController
 from controllers.run_controller import RunController
-from views.visualisation_view import VisualizationWindow
 from utils.helpers import select_drawing_folder
 from models.run_model import RunModel
 from utils.settings import Settings
 from models.logger_model import DrawingSummaryManager
+
 
 class MainController:
     def __init__(self):
         self.drawing_summary_manager = DrawingSummaryManager()
         self.view = MainView(self.drawing_summary_manager)
         self.extract_controller = ExtractController()
-        self.visualisation_window = VisualizationWindow
         self.settings = Settings()
         self.settings.error_signal.connect(self.view.show_error)
 
         # Store data for table and visualization
         self.data = None
+        self.plot_style_table = None
+        self.file_path = None
 
         # Instantiate the run model
         self.run_model = None
@@ -30,28 +31,20 @@ class MainController:
 
         # Signal path /  OperationsButtons - > MainWindow - > Main Controller (Method Call) : Extract Controller
         self.view.operation_buttons.extract_signal.connect(self.extract_controller.handle_extract)
-        # Signal path /  OperationsButtons - > MainWindow - > Main Controller (Method Call) : Handle Visualise
-        self.view.operation_buttons.visualise_signal.connect(self.handle_visualise)
-
 
         # Connect the Run button signal
         self.view.operation_buttons.run_signal.connect(self.handle_run)
 
-    def handle_data_ready(self, data):
+    def handle_data_ready(self, data, plot_style_table, file_path):
         """Handle data ready signal."""
         self.data = data  # Store the data for later use
+        self.plot_style_table = plot_style_table
+        self.file_path = file_path
+        self.view.left_menu.plot_style_text_box.setText(plot_style_table)
+
         self.view.viewport.populate_table(data)  # Populate table in the viewport
         # self.view.operation_buttons.enable_visualise_button()  # Enable Visualise button
         self.view.operation_buttons.enable_run_button()  # Enable assign button
-
-    def handle_visualise(self):
-        """Handle Visualise button click."""
-        if self.data:  # Ensure data is available
-            self.visualisation_window = VisualizationWindow(self.data)
-            self.visualisation_window.show()
-
-        # Connect the Run button signal
-        self.view.operation_buttons.run_signal.connect(self.handle_run)
 
     def handle_run(self):
         """Handle the Run button click."""
@@ -72,7 +65,7 @@ class MainController:
             return  # Exit if validation fails
 
         # Initialize the RunModel with the required data
-        self.run_model = RunModel(specified_settings, folder_path, table_data, self.view.left_menu)
+        self.run_model = RunModel(specified_settings, folder_path, table_data, self.view.left_menu, self.file_path)
         self.view.left_menu.set_run_model(self.run_model)  # Pass RunModel to LeftMenuView
 
         # Connect RunModel signals to handle progress and errors

@@ -6,13 +6,25 @@ a = Analysis(
     binaries=[],
     datas=[
         ("Dict/AttributeDictionary.json5", "Dict"),
-          ('assets/PyRevMateLogo.ico', 'assets'),# Include the JSON5 file in the build
+        ('assets/PyRevMateLogo.ico', 'assets'),  # Include the JSON5 file in the build
     ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'PyQt5.QtMultimedia',
+        'PyQt5.QtMultimediaWidgets',
+        'PyQt5.QtWebEngineWidgets',
+        'PyQt5.QtWebSockets',
+        'PyQt5.QtNetwork',
+        'PyQt5.QtSensors',
+        'PyQt5.QtPositioning',
+        'PyQt5.QtQuick',
+        'PyQt5.QtPrintSupport',
+        'matplotlib',
+        'scipy',
+    ],
     noarchive=False,
     optimize=0,
 )
@@ -25,7 +37,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='PyRevMateV_1.5',
+    name='PyRevMateV_1.7',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -39,4 +51,14 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='assets/PyRevMateLogo.ico',  # Path to the .ico file for the executable and tray icon
+)
+
+# Use COLLECT instead of a single-file EXE
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    name="PyRevMateV_1.7",
 )

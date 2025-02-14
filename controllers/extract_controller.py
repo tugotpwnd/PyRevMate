@@ -6,7 +6,7 @@ from models.increment_revision_model import get_revision_fields
 
 class ExtractController(QObject):
     error_signal = pyqtSignal(str)  # Signal to emit error messages
-    data_ready_signal = pyqtSignal(list)  # Signal to send data back to the view
+    data_ready_signal = pyqtSignal(list, str, str)  # First is list, second is str
 
     def __init__(self):
         super().__init__()
@@ -22,9 +22,9 @@ class ExtractController(QObject):
 
         try:
             # Extract attributes from the selected file
-            data = AutoCADModel.extract_attributes_with_retry(filename=filename)
+            data, plot_style_table = AutoCADModel.extract_attributes_with_retry(filename=filename)
 
-            self.data_ready_signal.emit(data)  # Notify the view with the data
+            self.data_ready_signal.emit(data, plot_style_table, filename)  # Notify the view with the data
         except RuntimeError as e:
             self.error_signal.emit(f"Failed to extract data: {str(e)}")
 

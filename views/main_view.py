@@ -13,7 +13,7 @@ class MainView(QMainWindow):
     def __init__(self, drawing_summary_manager):
         super().__init__()
         self.drawing_summary_manager = drawing_summary_manager
-        self.setWindowTitle("PyRev Mate V_1.7")
+        self.setWindowTitle("PyRev Mate V_1.8")
         self.setGeometry(0, 0, 1920, 1080)
 
         # Central widget and layout
@@ -31,7 +31,7 @@ class MainView(QMainWindow):
         right_layout = QVBoxLayout()
 
         # Title and description
-        title_label = QLabel("PyRev Mate V_1.7")
+        title_label = QLabel("PyRev Mate V_1.8")
         title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
         right_layout.addWidget(title_label)
 

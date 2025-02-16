@@ -300,11 +300,14 @@ class RunModel(QObject):
                 revision_value = None
                 try:
                     if self.settings.get("plot_to_pdf", True):
-
                         for item in new_data:
                             if item["Assignment"] == "DWG No.":
                                 dwg_value = item["Value"]
                             elif item["Assignment"] == "REVISION":
+                                revision_value = item["Value"]
+
+                        for item in updated_data_with_static:
+                            if item["Assignment"] == "REVISION":
                                 revision_value = item["Value"]
 
                         if dwg_value and revision_value:

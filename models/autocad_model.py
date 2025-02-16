@@ -325,7 +325,6 @@ class AutoCADModel:
 
             root_folder = os.path.dirname(file_path)
             new_path = os.path.join(root_folder, doc_name)
-            print(f"New path = {new_path}")
 
             # Properly format the command with arguments
             command = f'PLOTCURRENTLAYOUT\n {new_path}\n "{plot_style}"\n'

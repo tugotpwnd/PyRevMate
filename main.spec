@@ -37,7 +37,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='PyRevMateV_1.7',
+    name='PyRevMateV_1.8',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -60,5 +60,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name="PyRevMateV_1.7",
+    name="PyRevMateV_1.8",
 )

@@ -303,15 +303,26 @@ class RunModel(QObject):
                         for item in new_data:
                             if item["Assignment"] == "DWG No.":
                                 dwg_value = item["Value"]
+                                print(dwg_value)
                             elif item["Assignment"] == "REVISION":
                                 revision_value = item["Value"]
+                                print(f"rev value 1: {revision_value}")
 
                         for item in updated_data_with_static:
                             if item["Assignment"] == "REVISION":
                                 revision_value = item["Value"]
+                                print(f"rev value 2 : {revision_value}")
 
                         if dwg_value and revision_value:
+                            print("There is a dwg val")
+                        else:
+                            print(f"Either dwg_value : {dwg_value} or revision value: {revision_value} is missing")
+
+                        if dwg_value and revision_value:
+
                             pdf_name = f"{dwg_value}_{revision_value}"
+
+                            print(f"pdf name is : {pdf_name}")
 
                             plot_style = self.settings.get("plot_style_table")
 

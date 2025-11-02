@@ -1,3 +1,4 @@
+# views/left_menu_view.py
 from PyQt5.QtWidgets import (
     QGroupBox, QVBoxLayout, QRadioButton, QCheckBox, QComboBox, QLineEdit, QLabel,
     QFormLayout, QProgressBar, QSpacerItem, QSizePolicy, QTextEdit, QPushButton,
@@ -8,10 +9,8 @@ import sys
 from views.summary_view import SummaryView
 from views.read_replace_view import ReadReplaceDialog
 
-
 class SkippedFilesDialog(QDialog):
     cleared_signal = pyqtSignal()
-
     def __init__(self, skipped_files_with_errors):
         super().__init__()
         self.setWindowTitle("Skipped Files")
@@ -44,8 +43,10 @@ class SkippedFilesDialog(QDialog):
         self.table.setRowCount(0)
         self.cleared_signal.emit()
 
-
 class LeftMenuView(QGroupBox):
+    # New: signal to open map dialog (controller will handle)
+    map_fields_signal = pyqtSignal()
+
     def __init__(self, drawing_summary_manager):
         super().__init__("Settings")
         self.skipped_files_with_errors = []
@@ -61,11 +62,12 @@ class LeftMenuView(QGroupBox):
         self.read_replace_checkbox = QCheckBox("Enable Read and Replace")
         self.rename_sheets_checkbox = QCheckBox("Rename Sheets (Remove Leading Zeroes) WIP")
         self.rename_sheets_checkbox.setEnabled(False)
-        self.plot_to_pdf_checkbox = QCheckBox("Plot to PDF")        # Create text field (initially disabled)
+        self.plot_to_pdf_checkbox = QCheckBox("Plot to PDF")
+
+        # Create text field (initially disabled)
         self.plot_style_text_box = QLineEdit()
         self.plot_style_text_box.setPlaceholderText("Enter plot style...")
         self.plot_style_text_box.setEnabled(False)
-
 
         for checkbox in [self.purge_checkbox, self.transmit_checkbox, self.increment_revision_checkbox,
                          self.zoom_extents_checkbox, self.read_replace_checkbox, self.rename_sheets_checkbox,
@@ -74,12 +76,14 @@ class LeftMenuView(QGroupBox):
 
         layout.addWidget(self.plot_style_text_box)
 
+        # Read/Replace config
         self.read_replace_btn = QPushButton("Configure Read/Replace Pairs")
         self.read_replace_btn.clicked.connect(self.configure_read_replace)
         layout.addWidget(self.read_replace_btn)
 
         self.read_replace_data = {}
 
+        # Revision form
         self.dropdown = QComboBox()
         self.dropdown.addItems(["Numerical", "Alphabetical", "Alphanumeric", "Hardset Revision"])
         self.dropdown.setEnabled(False)
@@ -94,27 +98,28 @@ class LeftMenuView(QGroupBox):
         self.text_inputs = {}
         text_labels = ["DATE", "DESC", "DESIGNER", "DRAFTED", "CHECKED", "RPEQSIGN", "RPEQ", "COMPANY"]
         form_layout = QFormLayout()
-
         for label in text_labels:
             line_edit = QLineEdit()
             line_edit.setPlaceholderText(label)
             line_edit.setEnabled(False)
             self.text_inputs[label] = line_edit
             form_layout.addRow(QLabel(label), line_edit)
-
         layout.addLayout(form_layout)
 
+        # Logs
         self.log_window = QTextEdit()
         self.log_window.setReadOnly(True)
         self.log_window.setFixedHeight(300)
         layout.addWidget(QLabel("Logs"))
         layout.addWidget(self.log_window)
 
+        # Stop button
         self.stop_button = QPushButton("Stop")
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.handle_stop)
         layout.addWidget(self.stop_button)
 
+        # Skipped/Processed buttons
         skipped_layout = QHBoxLayout()
         self.skipped_button = QPushButton("Skipped Files (0)")
         self.skipped_button.setEnabled(False)
@@ -130,6 +135,12 @@ class LeftMenuView(QGroupBox):
         summary_layout.addStretch()
         layout.addLayout(summary_layout)
 
+        # NEW: Map Fields button (bottom-left-ish)
+        self.map_fields_button = QPushButton("Map Fields…")
+        self.map_fields_button.clicked.connect(self.map_fields_signal.emit)
+        layout.addWidget(self.map_fields_button)
+
+        # Spacer + progress
         spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         layout.addItem(spacer)
 
@@ -140,11 +151,9 @@ class LeftMenuView(QGroupBox):
 
         self.increment_revision_checkbox.stateChanged.connect(self.toggle_increment_revision)
         self.dropdown.currentTextChanged.connect(self.toggle_hardset_input)
-
         self.plot_to_pdf_checkbox.stateChanged.connect(self.toggle_plot_style)
 
         self.setLayout(layout)
-
         sys.stdout = StreamRedirect(self.log_window)
 
     def handle_stop(self):
@@ -165,7 +174,6 @@ class LeftMenuView(QGroupBox):
         enabled = state == Qt.Checked
         self.dropdown.setEnabled(enabled)
         self.hardset_input.setEnabled(enabled and self.dropdown.currentText() == "Hardset Revision")
-
         for line_edit in self.text_inputs.values():
             line_edit.setEnabled(enabled)
 
@@ -218,15 +226,11 @@ class LeftMenuView(QGroupBox):
         summary_view = SummaryView(summary_data, self.drawing_summary_manager)
         summary_view.exec_()
 
-
 class StreamRedirect:
     """Redirects stdout to a QTextEdit widget."""
-
     def __init__(self, text_edit):
         self.text_edit = text_edit
-
     def write(self, text):
         self.text_edit.append(text)
-
     def flush(self):
         pass

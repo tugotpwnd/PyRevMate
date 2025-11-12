@@ -1,6 +1,6 @@
 # views/viewport_view.py
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QHeaderView
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QBrush, QPalette
 from PyQt5.QtCore import Qt
 from utils.helpers import load_mapping_from_json, resource_path
 
@@ -124,34 +124,56 @@ class ViewportView(QWidget):
 
     def _apply_mapping_color(self, row: int):
         """
-        Color rules:
-        - Red if no assignment selected.
-        - Green if selected assignment equals mapping[tag].
-        - White otherwise.
+        Dark/Light friendly coloring:
+          - No selection  -> muted red overlay
+          - Correct match -> muted green overlay
+          - Otherwise     -> transparent (inherits table bg)
+        Text color auto-contrasts with background.
         """
+        # Detect theme roughly from base color lightness
+        base = self.table.palette().color(QPalette.Base)
+        is_dark = base.value() < 128
+
+        # Decide background color for the row
         tag_item = self.table.item(row, 0)
         tag = tag_item.text().strip() if tag_item else ""
 
         combo = self.table.cellWidget(row, 2)
         selected = combo.currentText().strip() if combo and combo.currentIndex() >= 0 else ""
 
-        # Prepare background color
         if not selected:
-            color = QColor(255, 200, 200)  # red
+            # RED
+            bg = QColor(180, 70, 70, 170) if is_dark else QColor(255, 210, 210)
         else:
             mapped = self.tag_to_assignment.get(tag, "")
             if mapped and selected == mapped:
-                color = QColor(200, 255, 200)  # green
+                # GREEN
+                bg = QColor(60, 140, 95, 150) if is_dark else QColor(210, 255, 210)
             else:
-                color = QColor(Qt.white)
+                # No special highlight; use table background (fixes "white on white" in dark mode)
+                bg = QColor(0, 0, 0, 0)
+
+        # Compute a readable foreground for the row
+        def _fg_for(c: QColor) -> QColor:
+            if c.alpha() == 0:
+                return QColor()  # default
+            # Relative luminance-ish
+            lum = 0.2126 * c.red() + 0.7152 * c.green() + 0.0722 * c.blue()
+            return QColor(0, 0, 0) if lum > 150 else QColor(255, 255, 255)
+
+        fg = _fg_for(bg)
 
         for col in range(self.table.columnCount()):
             cell = self.table.item(row, col)
             if cell is None:
                 cell = QTableWidgetItem("")
                 self.table.setItem(row, col, cell)
-            cell.setBackground(color)
-
+            cell.setBackground(bg)
+            if fg.isValid():
+                cell.setForeground(QBrush(fg))
+            else:
+                # Clear custom foreground to inherit table default
+                cell.setForeground(QBrush())
     @staticmethod
     def generate_assignment_options():
         """Generate the list of assignment options."""

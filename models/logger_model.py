@@ -32,12 +32,10 @@ class DrawingSummaryManager:
         drawing_number = next(
             (field["Value"] for field in updated_layout_data if field.get("Assignment") == "DWG No."), None
         )
-        drawing_titles = [
-            field["Value"]
-            for field in updated_layout_data
-            if field.get("Assignment") in ["DWG TITLE 1", "DWG TITLE 2", "DWG TITLE 3", "DWG TITLE 4"]
-        ]
-        concatenated_title = " - ".join(filter(None, drawing_titles))
+        assign_map = {f.get("Assignment"): (f.get("Value") or "") for f in updated_layout_data}
+        ordered_keys = [f"DWG TITLE {i}" for i in range(1, 5)]
+        titles = [assign_map.get(k, "").strip() for k in ordered_keys if assign_map.get(k, "").strip()]
+        concatenated_title = " - ".join(titles)
 
         rev, index = find_latest_revision_value_and_index(layout_data)
         revision_desc = next(

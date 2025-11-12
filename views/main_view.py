@@ -262,6 +262,13 @@ class MainView(QMainWindow):
         except Exception:
             pass
 
+        try:
+            from views.mapping_dialog import MapFieldsDialog
+            for dlg in self.findChildren(MapFieldsDialog):
+                dlg.refresh_row_colors()
+        except Exception:
+            pass
+
     def show_error(self, message):
         """Display an error message."""
         error_dialog = QMessageBox(self)

@@ -5,13 +5,26 @@ from PyQt5.QtWidgets import (
     QAbstractItemView
 )
 from PyQt5.QtCore import Qt, QMimeData
-from PyQt5.QtGui import QColor, QDrag
+from PyQt5.QtGui import QColor, QDrag, QPalette, QBrush
+
 
 # Robust imports (works whether you use a package structure or flat files)
 try:
     from utils.helpers import load_mapping_from_json, save_mapping_to_json, resource_path
 except Exception:
     from helpers import load_mapping_from_json, save_mapping_to_json, resource_path
+
+def _is_dark(widget) -> bool:
+    base = widget.palette().color(QPalette.Base)
+    return base.value() < 128
+
+def _contrast_fg(bg: QColor) -> QColor:
+    if bg.alpha() == 0:
+        return QColor()  # invalid -> inherit
+    # simple luminance check
+    lum = 0.2126*bg.red() + 0.7152*bg.green() + 0.0722*bg.blue()
+    return QColor(0, 0, 0) if lum > 150 else QColor(255, 255, 255)
+
 
 
 class AssignListWidget(QListWidget):
@@ -158,13 +171,16 @@ class MapFieldsDialog(QDialog):
                     combo.setCurrentIndex(j)
                 self._update_row_status(row)
 
-    def _set_row_color(self, row, qcolor: QColor):
+    def _set_row_color(self, row, bg: QColor):
+        fg = _contrast_fg(bg)
         for c in range(self.table.columnCount()):
             it = self.table.item(row, c)
             if it is None:
                 it = QTableWidgetItem("")
                 self.table.setItem(row, c, it)
-            it.setBackground(qcolor)
+            # transparent -> clear brush so it inherits table bg
+            it.setBackground(QBrush() if bg.alpha() == 0 else bg)
+            it.setForeground(QBrush() if not fg.isValid() else QBrush(fg))
 
     def _update_row_status(self, row):
         combo = self.table.cellWidget(row, 2)
@@ -172,18 +188,23 @@ class MapFieldsDialog(QDialog):
         mapped = combo.currentText().strip() if combo and combo.currentIndex() >= 0 else ""
         status_item = self.table.item(row, 3)
 
+        dark = _is_dark(self.table)
+
         if not mapped:
             status_item.setText("Unmapped")
-            self._set_row_color(row, QColor(255, 200, 200))  # red
+            bg = QColor(180, 70, 70, 170) if dark else QColor(255, 200, 200)  # red
+            self._set_row_color(row, bg)
             return
 
         existing = self.existing_mapping.get(tag, "")
         if existing and existing == mapped:
             status_item.setText("Mapped (OK)")
-            self._set_row_color(row, QColor(200, 255, 200))  # green
+            bg = QColor(60, 140, 95, 150) if dark else QColor(200, 255, 200)  # green
         else:
             status_item.setText("New/Changed")
-            self._set_row_color(row, QColor(255, 240, 200))  # amber
+            bg = QColor(180, 140, 60, 160) if dark else QColor(255, 240, 200)  # amber
+
+        self._set_row_color(row, bg)
 
     def _collect_new_mappings(self):
         out = {}
@@ -247,3 +268,8 @@ class MapFieldsDialog(QDialog):
             self.accept()  # Main controller should handle reload + recolor
         except Exception as e:
             QMessageBox.critical(self, "Save failed", str(e))
+
+    def refresh_row_colors(self):
+        for r in range(self.table.rowCount()):
+            self._update_row_status(r)
+
